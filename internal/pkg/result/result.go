@@ -1,7 +1,7 @@
 package result
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 type Code uint64
@@ -11,43 +11,82 @@ var (
 	fail    = newResultError(1, "fail")
 )
 
+var (
+	ErrInvalidParams = newResultError(2, "invalid parameters")
+)
+
 type Result[T any] struct {
 	Code    Code   `json:"code"`
 	Message string `json:"message"`
-	Data    T      `json:"data"`
+	Data    *T     `json:"data"`
 }
 
-func Success(data any) Result[any] {
-	return Result[any]{
+type Option[T any] func(result *Result[T])
+
+func WithData[T any](data T) Option[T] {
+	return func(result *Result[T]) {
+		result.Data = &data
+	}
+}
+
+func Success[T any](options ...Option[T]) Result[T] {
+	r := Result[T]{
 		Code:    success.Code,
 		Message: success.Message,
-		Data:    data,
+		Data:    nil,
 	}
+
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		option(&r)
+	}
+
+	return r
 }
 
-func Fail(data any) Result[any] {
-	return Result[any]{
+func Fail[T any](options ...Option[T]) Result[T] {
+	r := Result[T]{
 		Code:    fail.Code,
 		Message: fail.Message,
-		Data:    data,
+		Data:    nil,
 	}
+
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		option(&r)
+	}
+
+	return r
 }
 
-func From(err error, data any) Result[any] {
+func From[T any](err error, options ...Option[T]) Result[T] {
 	if err == nil {
-		return Success(nil)
+		return Success[T]()
 	}
 
 	var ei ErrorInfo
 	if !errors.As(err, &ei) {
-		return Fail(nil)
+		return Fail[T]()
 	}
 
-	return Result[any]{
+	r := Result[T]{
 		Code:    ei.Code,
 		Message: ei.Message,
-		Data:    data,
+		Data:    nil,
 	}
+
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		option(&r)
+	}
+
+	return r
 }
 
 type ErrorInfo struct {
@@ -64,8 +103,4 @@ func newResultError(code Code, message string) ErrorInfo {
 
 func (e ErrorInfo) Error() string {
 	return e.Message
-}
-
-func (e ErrorInfo) Is(target error) bool {
-	return e.Message == target.Error()
 }
