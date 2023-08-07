@@ -3,44 +3,33 @@ package logx
 import (
 	"context"
 	"log/slog"
+	"os"
 )
 
-var l Logger
-
-func Init() {
-	l = &logger{
-		l: &slog.Logger{},
+func Init( /* TODO(TZQ) init by config */ ) (Logger, error) {
+	consoleLogger := &slogLogger{
+		l: slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			// TODO(TZQ)
+		})),
 	}
+
+	logger := newLoggerCollection(consoleLogger)
+
+	return logger, nil
 }
 
-func Error(msg string, fields ...slog.Attr) {
-	l.Error(msg, fields...)
+func Error(ctx context.Context, msg string, fields ...slog.Attr) {
+	LoggerFromContext(ctx).Error(ctx, msg, fields...)
 }
 
-func Warn(msg string, fields ...slog.Attr) {
-	l.Warn(msg, fields...)
+func Warn(ctx context.Context, msg string, fields ...slog.Attr) {
+	LoggerFromContext(ctx).Warn(ctx, msg, fields...)
 }
 
-func Info(msg string, fields ...slog.Attr) {
-	l.Info(msg, fields...)
+func Info(ctx context.Context, msg string, fields ...slog.Attr) {
+	LoggerFromContext(ctx).Info(ctx, msg, fields...)
 }
 
-func Debug(msg string, fields ...slog.Attr) {
-	l.Debug(msg, fields...)
-}
-
-func ErrorCtx(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.ErrorCtx(ctx, msg, fields...)
-}
-
-func WarnCtx(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.WarnCtx(ctx, msg, fields...)
-}
-
-func InfoCtx(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.InfoCtx(ctx, msg, fields...)
-}
-
-func DebugCtx(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.DebugCtx(ctx, msg, fields...)
+func Debug(ctx context.Context, msg string, fields ...slog.Attr) {
+	LoggerFromContext(ctx).Debug(ctx, msg, fields...)
 }
