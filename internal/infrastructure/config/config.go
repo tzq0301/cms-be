@@ -25,6 +25,7 @@ var (
 
 type Config struct {
 	Data Data `mapstructure:"data"`
+	Log  Log  `mapstructure:"log"`
 }
 
 func Load() (Config, error) {

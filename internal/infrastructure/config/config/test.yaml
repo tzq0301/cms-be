@@ -1,0 +1,17 @@
+data:
+  db:
+    - name: "cms-biz"
+      master:
+        host: "127.0.0.1"
+        port: 3306
+        username: "root"
+        password: "123456"
+      database:
+        - name: "test"
+
+log:
+  console:
+    level: "info"
+#  file:
+#    - level: "debug"
+#      filepath: "main.log"

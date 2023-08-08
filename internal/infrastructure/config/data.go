@@ -1,5 +1,5 @@
 package config
 
 type Data struct {
-	DB DB `mapstructure:"db"`
+	DB []DB `mapstructure:"db"`
 }

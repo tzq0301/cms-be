@@ -1,8 +1,9 @@
 package config
 
 type DB struct {
-	Master    DBInstance `mapstructure:"master"`
-	Databases []Database `mapstructure:"databases"`
+	Name     string     `mapstructure:"name"`
+	Master   DBInstance `mapstructure:"master"`
+	Database []Database `mapstructure:"database"`
 }
 
 type DBInstance struct {
