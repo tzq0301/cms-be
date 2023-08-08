@@ -8,6 +8,7 @@ import (
 
 	"cms-be/internal/infrastructure/config"
 	"cms-be/internal/pkg/observability/logx"
+	"cms-be/internal/pkg/runtimex/shutdownx"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func run() error {
 
 	logger, err := initLogger(c.Log)
 	if err != nil {
-		return err
+		return errors.Join(err, errors.New("fail to init logger"))
 	}
 
 	{
@@ -42,6 +43,14 @@ func run() error {
 		logx.Info(ctx, "test", slog.String("hello", "world"))
 		logx.Warn(ctx, "test", slog.String("hello", "world"))
 		logx.Error(ctx, "test", slog.String("hello", "world"))
+	}
+
+	err = shutdownx.SetErrLogger(func(err error) {
+		ctx := logx.ContextWithLogger(context.TODO(), logger)
+		logx.Error(ctx, err.Error())
+	})
+	if err != nil {
+		return errors.Join(err, errors.New("fail to set logger for shutdownx"))
 	}
 
 	return nil
