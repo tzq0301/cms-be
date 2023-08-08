@@ -1,10 +1,10 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
 )
@@ -24,28 +24,28 @@ var (
 )
 
 type Config struct {
-	DB DB `mapstructure:"db"`
+	Data Data `mapstructure:"data"`
 }
 
 func Load() (Config, error) {
 	env, err := getEnv()
 	if err != nil {
-		return lo.Empty[Config](), errors.Wrap(err, "cannot load config")
+		return lo.Empty[Config](), errors.Join(err, errors.New("cannot load config"))
 	}
 
 	viper.SetConfigName(env)
-	viper.AddConfigPath("internal/infrastructure/config")
+	viper.AddConfigPath("internal/infrastructure/config/config")
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		return lo.Empty[Config](), errors.Wrap(err, "cannot read in config")
+		return lo.Empty[Config](), errors.Join(err, errors.New("cannot read in config"))
 	}
 
 	c := Config{}
 
 	err = viper.Unmarshal(&c)
 	if err != nil {
-		return Config{}, errors.Wrapf(err, "cannot unmarshal from %s.yaml", env)
+		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("cannot unmarshal from %s.yaml", env))
 	}
 
 	return c, nil
