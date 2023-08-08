@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	envKey = "APP_ENV"
+	envKey = "SERVICE_ENV"
 
 	envProd = "prod"
 	envTest = "test"
@@ -19,34 +19,51 @@ const (
 	envDefault = envDev
 )
 
+const (
+	configDefault = "config"
+
+	configProd = envProd
+	configTest = envTest
+	configDev  = envDev
+)
+
+const (
+	configBasePath = "internal/infrastructure/config/config"
+)
+
 var (
 	envs = []string{envProd, envTest, envDev}
 )
 
 type Config struct {
-	Data Data `mapstructure:"data"`
-	Log  Log  `mapstructure:"log"`
+	Service Service `mapstructure:"service"`
+	Data    Data    `mapstructure:"data"`
+	Log     Log     `mapstructure:"log"`
 }
 
 func Load() (Config, error) {
 	env, err := getEnv()
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, errors.New("cannot load config"))
+		return lo.Empty[Config](), errors.Join(err, errors.New("fail to load config"))
 	}
 
-	viper.SetConfigName(env)
-	viper.AddConfigPath("internal/infrastructure/config/config")
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, errors.New("cannot read in config"))
-	}
+	viper.AddConfigPath(configBasePath)
 
 	c := Config{}
 
-	err = viper.Unmarshal(&c)
+	err = readConfig(&c, configDefault)
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("cannot unmarshal from %s.yaml", env))
+		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("fail to read default config from: %s.yaml", configDefault))
+	}
+
+	configName, err := getConfigName(env)
+	if err != nil {
+		return lo.Empty[Config](), errors.Join(err, errors.New("fail to convert env to config file name"))
+	}
+
+	err = readConfig(&c, configName)
+	if err != nil {
+		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("fail to read config from: %s.yaml", configName))
 	}
 
 	return c, nil
@@ -64,4 +81,33 @@ func getEnv() (string, error) {
 	}
 
 	return env, nil
+}
+
+func getConfigName(env string) (string, error) {
+	switch env {
+	case envProd:
+		return configProd, nil
+	case envTest:
+		return configTest, nil
+	case envDev:
+		return configDev, nil
+	default:
+		return lo.Empty[string](), fmt.Errorf("env is invalid: %s", env)
+	}
+}
+
+func readConfig(c *Config, configName string) error {
+	viper.SetConfigName(configName)
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return errors.Join(err, fmt.Errorf("fail to read in config from: %s.yaml", configName))
+	}
+
+	err = viper.Unmarshal(&c)
+	if err != nil {
+		return errors.Join(err, fmt.Errorf("fail to unmarshal from: %s.yaml", configName))
+	}
+
+	return nil
 }

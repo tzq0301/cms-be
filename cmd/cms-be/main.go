@@ -28,6 +28,7 @@ func run() error {
 
 		fmt.Printf("%+v\n", c)
 		fmt.Printf("%+v\n", *c.Log.Console)
+		fmt.Println()
 	}
 
 	logger, err := initLogger(c.Log)
