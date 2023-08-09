@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"cms-be/internal/infrastructure/config"
+	"cms-be/internal/pkg/async"
 	"cms-be/internal/pkg/observability/logx"
 	"cms-be/internal/pkg/runtimex/shutdownx"
 )
@@ -46,10 +47,25 @@ func run() error {
 		logx.Error(ctx, "test", slog.String("hello", "world"))
 	}
 
-	err = shutdownx.SetErrLogger(func(err error) {
+	errLogger := func(err error) {
 		ctx := logx.ContextWithLogger(context.TODO(), logger)
 		logx.Error(ctx, err.Error())
-	})
+	}
+
+	err = async.SetErrLogger(errLogger)
+	if err != nil {
+		return errors.Join(err, errors.New("fail to set logger for async"))
+	}
+
+	{
+		// TODO(TZQ) delete
+
+		async.Go(func() {
+			panic("test")
+		})
+	}
+
+	err = shutdownx.SetErrLogger(errLogger)
 	if err != nil {
 		return errors.Join(err, errors.New("fail to set logger for shutdownx"))
 	}
