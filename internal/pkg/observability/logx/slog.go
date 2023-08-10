@@ -19,7 +19,7 @@ type slogLogger struct {
 func newSlogConsoleLogger(config ConsoleAppenderConfig) (*slogLogger, error) {
 	level, err := logxLevelToSlogLeveler(config.Level)
 	if err != nil {
-		return nil, errors.Join(err, errors.New("fail to convert logx.Level to slog.Leveler"))
+		return nil, errors.Join(err, errors.New("convert logx.Level to slog.Leveler"))
 	}
 
 	logger := slog.
@@ -37,12 +37,12 @@ func newSlogConsoleLogger(config ConsoleAppenderConfig) (*slogLogger, error) {
 func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
 	level, err := logxLevelToSlogLeveler(config.Level)
 	if err != nil {
-		return nil, errors.Join(err, errors.New("fail to convert logx.Level to slog.Leveler"))
+		return nil, errors.Join(err, errors.New("convert logx.Level to slog.Leveler"))
 	}
 
 	file, err := os.OpenFile(config.FilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return nil, errors.Join(err, fmt.Errorf("fail to open file: %s", config.FilePath))
+		return nil, errors.Join(err, fmt.Errorf("open file: %s", config.FilePath))
 	}
 
 	shutdown.AddHook(file.Close)

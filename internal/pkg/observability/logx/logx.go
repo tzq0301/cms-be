@@ -12,7 +12,7 @@ func Init(config Config) (Logger, error) {
 	if config.ConsoleAppenderConfig != nil {
 		consoleLogger, err := newSlogConsoleLogger(*config.ConsoleAppenderConfig)
 		if err != nil {
-			return nil, errors.Join(err, errors.New("fail to create slogConsoleLogger instance"))
+			return nil, errors.Join(err, errors.New("create slogConsoleLogger instance"))
 		}
 
 		collection = append(collection, consoleLogger)
@@ -21,7 +21,7 @@ func Init(config Config) (Logger, error) {
 	for _, c := range config.FileAppenderConfigs {
 		fileLogger, err := newSlogFileLogger(c)
 		if err != nil {
-			return nil, errors.Join(err, errors.New("fail to create slogFileLogger instance"))
+			return nil, errors.Join(err, errors.New("create slogFileLogger instance"))
 		}
 
 		collection = append(collection, fileLogger)

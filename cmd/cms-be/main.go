@@ -67,13 +67,13 @@ func run() error {
 		// TODO(TZQ) delete
 
 		async.Go(func() {
-			panic("test")
+			panic("test panic & recover")
 		})
 	}
 
 	err = shutdown.SetErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("fail to set logger for shutdown"))
+		return errors.Join(err, errors.New("set logger for shutdown"))
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, e
 		consoleLogConfig := c.Log.Console
 		level, err := logx.LevelFromString(consoleLogConfig.Level)
 		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("fail to convert the level field of console: level=%s", consoleLogConfig.Level))
+			return nil, errors.Join(err, fmt.Errorf("convert the level field of console: level=%s", consoleLogConfig.Level))
 		}
 
 		logConfig.ConsoleAppenderConfig = &logx.ConsoleAppenderConfig{
@@ -108,7 +108,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, e
 	for _, fileLogConfig := range c.Log.File {
 		level, err := logx.LevelFromString(fileLogConfig.Level)
 		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("fail to convert the level field of file: level=%s, filepath=%s", fileLogConfig.Level, fileLogConfig.FilePath))
+			return nil, errors.Join(err, fmt.Errorf("convert the level field of file: level=%s, filepath=%s", fileLogConfig.Level, fileLogConfig.FilePath))
 		}
 
 		logConfig.FileAppenderConfigs = append(logConfig.FileAppenderConfigs, logx.FileAppenderConfig{
@@ -122,7 +122,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, e
 
 	logger, err := logx.Init(logConfig)
 	if err != nil {
-		return nil, errors.Join(err, errors.New("fail to init logger"))
+		return nil, errors.Join(err, errors.New("init logger"))
 	}
 
 	return logger, nil

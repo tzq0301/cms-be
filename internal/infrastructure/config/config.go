@@ -44,7 +44,7 @@ type Config struct {
 func Load() (Config, error) {
 	env, err := getEnv()
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, errors.New("fail to load config"))
+		return lo.Empty[Config](), errors.Join(err, errors.New("load config"))
 	}
 
 	viper.AddConfigPath(configBasePath)
@@ -53,17 +53,17 @@ func Load() (Config, error) {
 
 	err = readConfig(&c, configDefault)
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("fail to read default config from: %s.yaml", configDefault))
+		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("read default config from: %s.yaml", configDefault))
 	}
 
 	configName, err := getConfigName(env)
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, errors.New("fail to convert env to config file name"))
+		return lo.Empty[Config](), errors.Join(err, errors.New("convert env to config file name"))
 	}
 
 	err = readConfig(&c, configName)
 	if err != nil {
-		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("fail to read config from: %s.yaml", configName))
+		return lo.Empty[Config](), errors.Join(err, fmt.Errorf("read config from: %s.yaml", configName))
 	}
 
 	return c, nil
@@ -101,12 +101,12 @@ func readConfig(c *Config, configName string) error {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return errors.Join(err, fmt.Errorf("fail to read in config from: %s.yaml", configName))
+		return errors.Join(err, fmt.Errorf("read in config from: %s.yaml", configName))
 	}
 
 	err = viper.Unmarshal(&c)
 	if err != nil {
-		return errors.Join(err, fmt.Errorf("fail to unmarshal from: %s.yaml", configName))
+		return errors.Join(err, fmt.Errorf("unmarshal from: %s.yaml", configName))
 	}
 
 	return nil
