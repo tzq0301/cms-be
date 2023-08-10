@@ -9,7 +9,8 @@ import (
 	"cms-be/internal/infrastructure/config"
 	"cms-be/internal/pkg/async"
 	"cms-be/internal/pkg/observability/logx"
-	"cms-be/internal/pkg/runtimex/shutdownx"
+	"cms-be/internal/pkg/runtimex"
+	"cms-be/internal/pkg/runtimex/shutdown"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 func run() error {
 	c, err := config.Load()
 	if err != nil {
-		return err
+		return errors.Join(err, errors.New("load config"))
 	}
 
 	{
@@ -32,9 +33,14 @@ func run() error {
 		fmt.Println()
 	}
 
-	logger, err := initLogger(c.Log)
+	runtimeEnvironment, err := runtimex.Load()
 	if err != nil {
-		return errors.Join(err, errors.New("fail to init logger"))
+		return errors.Join(err, errors.New("load runtime environment"))
+	}
+
+	logger, err := initLogger(c, runtimeEnvironment)
+	if err != nil {
+		return errors.Join(err, errors.New("init logger"))
 	}
 
 	{
@@ -54,7 +60,7 @@ func run() error {
 
 	err = async.SetErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("fail to set logger for async"))
+		return errors.Join(err, errors.New("set logger for async"))
 	}
 
 	{
@@ -65,19 +71,27 @@ func run() error {
 		})
 	}
 
-	err = shutdownx.SetErrLogger(errLogger)
+	err = shutdown.SetErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("fail to set logger for shutdownx"))
+		return errors.Join(err, errors.New("fail to set logger for shutdown"))
 	}
 
 	return nil
 }
 
-func initLogger(c config.Log) (logx.Logger, error) {
+func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, error) {
 	logConfig := logx.Config{}
 
-	if c.Console != nil {
-		consoleLogConfig := c.Console
+	serviceConfig := logx.ServiceConfig{
+		Name: c.Service.Name,
+		IP: logx.IPConfig{
+			V4: re.IP.V4,
+			V6: re.IP.V6,
+		},
+	}
+
+	if c.Log.Console != nil {
+		consoleLogConfig := c.Log.Console
 		level, err := logx.LevelFromString(consoleLogConfig.Level)
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("fail to convert the level field of console: level=%s", consoleLogConfig.Level))
@@ -85,12 +99,13 @@ func initLogger(c config.Log) (logx.Logger, error) {
 
 		logConfig.ConsoleAppenderConfig = &logx.ConsoleAppenderConfig{
 			CommonAppenderConfig: logx.CommonAppenderConfig{
-				Level: level,
+				Level:         level,
+				ServiceConfig: serviceConfig,
 			},
 		}
 	}
 
-	for _, fileLogConfig := range c.File {
+	for _, fileLogConfig := range c.Log.File {
 		level, err := logx.LevelFromString(fileLogConfig.Level)
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("fail to convert the level field of file: level=%s, filepath=%s", fileLogConfig.Level, fileLogConfig.FilePath))
@@ -98,7 +113,8 @@ func initLogger(c config.Log) (logx.Logger, error) {
 
 		logConfig.FileAppenderConfigs = append(logConfig.FileAppenderConfigs, logx.FileAppenderConfig{
 			CommonAppenderConfig: logx.CommonAppenderConfig{
-				Level: level,
+				Level:         level,
+				ServiceConfig: serviceConfig,
 			},
 			FilePath: fileLogConfig.FilePath,
 		})

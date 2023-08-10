@@ -1,4 +1,4 @@
-package shutdownx
+package shutdown
 
 import (
 	"errors"
@@ -87,7 +87,7 @@ func AddHook(hook HookFn) {
 func SetErrLogger(errLogger func(error)) error {
 	err := defaultManager.setErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("fail to set error logger for package shutdownx"))
+		return errors.Join(err, errors.New("fail to set error logger for package shutdown"))
 	}
 
 	return nil

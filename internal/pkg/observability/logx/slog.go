@@ -9,7 +9,7 @@ import (
 
 	"github.com/samber/lo"
 
-	"cms-be/internal/pkg/runtimex/shutdownx"
+	"cms-be/internal/pkg/runtimex/shutdown"
 )
 
 type slogLogger struct {
@@ -22,10 +22,15 @@ func newSlogConsoleLogger(config ConsoleAppenderConfig) (*slogLogger, error) {
 		return nil, errors.Join(err, errors.New("fail to convert logx.Level to slog.Leveler"))
 	}
 
-	return &slogLogger{
-		l: slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.
+		New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: level,
-		})),
+		})).
+		With(slog.Any("service", config.ServiceConfig)).
+		WithGroup("args")
+
+	return &slogLogger{
+		l: logger,
 	}, nil
 }
 
@@ -40,12 +45,17 @@ func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
 		return nil, errors.Join(err, fmt.Errorf("fail to open file: %s", config.FilePath))
 	}
 
-	shutdownx.AddHook(file.Close)
+	shutdown.AddHook(file.Close)
+
+	logger := slog.
+		New(slog.NewJSONHandler(file, &slog.HandlerOptions{
+			Level: level,
+		})).
+		With(slog.Any("service", config.ServiceConfig)).
+		WithGroup("args")
 
 	return &slogLogger{
-		l: slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{
-			Level: level,
-		})),
+		l: logger,
 	}, nil
 }
 
