@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"cms-be/internal/infrastructure/config"
 	"cms-be/internal/pkg/async"
@@ -51,6 +52,14 @@ func run() error {
 		logx.Info(ctx, "test", slog.String("hello", "world"))
 		logx.Warn(ctx, "test", slog.String("hello", "world"))
 		logx.Error(ctx, "test", slog.String("hello", "world"))
+
+		var wg sync.WaitGroup
+
+		for i := 0; i < 20; i++ {
+			logx.Info(ctx, "concurrent log")
+		}
+
+		wg.Wait()
 	}
 
 	errLogger := func(err error) {
