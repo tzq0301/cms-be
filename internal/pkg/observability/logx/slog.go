@@ -60,19 +60,19 @@ func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
 }
 
 func (l *slogLogger) Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.withGroup().l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.with().l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.withGroup().l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.with().l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.withGroup().l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.with().l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.withGroup().l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.with().l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) With(fields ...slog.Attr) Logger {
@@ -81,7 +81,7 @@ func (l *slogLogger) With(fields ...slog.Attr) Logger {
 	}
 }
 
-func (l *slogLogger) withGroup() *slogLogger {
+func (l *slogLogger) with() *slogLogger {
 	return &slogLogger{
 		l: l.l.WithGroup("fields"),
 	}
