@@ -39,11 +39,23 @@ func (l *loggerCollection) Debug(ctx context.Context, msg string, fields ...slog
 	}
 }
 
-func (l *loggerCollection) With(fields ...slog.Attr) Logger {
+func (l *loggerCollection) WithAttrs(fields ...slog.Attr) Logger {
 	var loggers []Logger
 
 	for _, logger := range l.loggers {
-		loggers = append(loggers, logger.With(fields...))
+		loggers = append(loggers, logger.WithAttrs(fields...))
+	}
+
+	return &loggerCollection{
+		loggers: loggers,
+	}
+}
+
+func (l *loggerCollection) withGroup(g string) Logger {
+	var loggers []Logger
+
+	for _, logger := range l.loggers {
+		loggers = append(loggers, logger.withGroup(g))
 	}
 
 	return &loggerCollection{

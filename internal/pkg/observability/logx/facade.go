@@ -10,5 +10,6 @@ type Logger interface {
 	Warn(ctx context.Context, msg string, fields ...slog.Attr)
 	Info(ctx context.Context, msg string, fields ...slog.Attr)
 	Debug(ctx context.Context, msg string, fields ...slog.Attr)
-	With(fields ...slog.Attr) Logger
+	WithAttrs(fields ...slog.Attr) Logger
+	withGroup(g string) Logger
 }

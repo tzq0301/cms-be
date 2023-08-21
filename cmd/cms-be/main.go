@@ -66,7 +66,7 @@ func run() error {
 		}
 
 		{
-			enhancedLogger := logger.With(slog.String("enhance", "yes"))
+			enhancedLogger := logger.WithAttrs(slog.String("enhance", "yes"))
 			enhancedCtx := logx.ContextWithLogger(context.Background(), enhancedLogger)
 			logx.Info(enhancedCtx, "enhance message", slog.String("one", "1"))
 		}

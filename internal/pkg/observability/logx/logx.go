@@ -4,6 +4,14 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+
+	"cms-be/internal/pkg/runtimex"
+)
+
+const (
+	defaultGroupName = "fields"
+
+	keyStackTrace = "stack"
 )
 
 func Init(config Config) (Logger, error) {
@@ -33,17 +41,25 @@ func Init(config Config) (Logger, error) {
 }
 
 func Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	LoggerFromContext(ctx).Error(ctx, msg, fields...)
+	log(ctx).Error(ctx, msg, fields...)
 }
 
 func Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	LoggerFromContext(ctx).Warn(ctx, msg, fields...)
+	log(ctx).Warn(ctx, msg, fields...)
 }
 
 func Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	LoggerFromContext(ctx).Info(ctx, msg, fields...)
+	log(ctx).Info(ctx, msg, fields...)
 }
 
 func Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	LoggerFromContext(ctx).Debug(ctx, msg, fields...)
+	log(ctx).Debug(ctx, msg, fields...)
+}
+
+func log(ctx context.Context) Logger {
+	l := LoggerFromContext(ctx).
+		WithAttrs(slog.String(keyStackTrace, runtimex.StackTraceOfCallerOfCaller())).
+		withGroup(defaultGroupName)
+
+	return l
 }

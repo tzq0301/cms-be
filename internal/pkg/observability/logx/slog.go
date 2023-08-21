@@ -64,31 +64,30 @@ func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
 }
 
 func (l *slogLogger) Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.with().l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.with().l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.with().l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.with().l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+	l.l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
-func (l *slogLogger) With(fields ...slog.Attr) Logger {
+func (l *slogLogger) WithAttrs(fields ...slog.Attr) Logger {
 	cloned := l.clone()
 	cloned.l = l.l.With(slogAttrSliceToAnySlice(fields...)...)
 	return cloned
 }
 
-// TODO
-func (l *slogLogger) with() *slogLogger {
+func (l *slogLogger) withGroup(g string) Logger {
 	cloned := l.clone()
-	cloned.l = l.l.WithGroup("fields")
+	cloned.l = l.l.WithGroup(g)
 	return cloned
 }
 
