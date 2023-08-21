@@ -16,6 +16,10 @@ type slogLogger struct {
 	l *slog.Logger
 }
 
+func (l *slogLogger) clone() *slogLogger {
+	return &slogLogger{}
+}
+
 func newSlogLogger(handler slog.Handler, service ServiceConfig) *slogLogger {
 	logger := slog.
 		New(handler).
@@ -76,15 +80,16 @@ func (l *slogLogger) Debug(ctx context.Context, msg string, fields ...slog.Attr)
 }
 
 func (l *slogLogger) With(fields ...slog.Attr) Logger {
-	return &slogLogger{
-		l: l.l.With(slogAttrSliceToAnySlice(fields...)...),
-	}
+	cloned := l.clone()
+	cloned.l = l.l.With(slogAttrSliceToAnySlice(fields...)...)
+	return cloned
 }
 
+// TODO
 func (l *slogLogger) with() *slogLogger {
-	return &slogLogger{
-		l: l.l.WithGroup("fields"),
-	}
+	cloned := l.clone()
+	cloned.l = l.l.WithGroup("fields")
+	return cloned
 }
 
 func logxLevelToSlogLeveler(l Level) (slog.Leveler, error) {
