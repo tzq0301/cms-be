@@ -16,22 +16,27 @@ type slogLogger struct {
 	l *slog.Logger
 }
 
+func newSlogLogger(handler slog.Handler, service ServiceConfig) *slogLogger {
+	logger := slog.
+		New(handler).
+		With(slog.Any("service", service))
+
+	return &slogLogger{
+		l: logger,
+	}
+}
+
 func newSlogConsoleLogger(config ConsoleAppenderConfig) (*slogLogger, error) {
 	level, err := logxLevelToSlogLeveler(config.Level)
 	if err != nil {
 		return nil, errors.Join(err, errors.New("convert logx.Level to slog.Leveler"))
 	}
 
-	logger := slog.
-		New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: level,
-		})).
-		With(slog.Any("service", config.ServiceConfig)).
-		WithGroup("args")
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	})
 
-	return &slogLogger{
-		l: logger,
-	}, nil
+	return newSlogLogger(handler, config.ServiceConfig), nil
 }
 
 func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
@@ -47,40 +52,39 @@ func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
 
 	shutdown.AddHook(file.Close)
 
-	logger := slog.
-		New(slog.NewJSONHandler(file, &slog.HandlerOptions{
-			Level: level,
-		})).
-		With(slog.Any("service", config.ServiceConfig)).
-		WithGroup("args")
+	handler := slog.NewJSONHandler(file, &slog.HandlerOptions{
+		Level: level,
+	})
 
-	return &slogLogger{
-		l: logger,
-	}, nil
+	return newSlogLogger(handler, config.ServiceConfig), nil
 }
 
 func (l *slogLogger) Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.ErrorContext(ctx, msg, lo.Map(fields, func(item slog.Attr, _ int) any {
-		return item
-	})...)
+	l.withGroup().l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.WarnContext(ctx, msg, lo.Map(fields, func(item slog.Attr, _ int) any {
-		return item
-	})...)
+	l.withGroup().l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.InfoContext(ctx, msg, lo.Map(fields, func(item slog.Attr, _ int) any {
-		return item
-	})...)
+	l.withGroup().l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
 }
 
 func (l *slogLogger) Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.DebugContext(ctx, msg, lo.Map(fields, func(item slog.Attr, _ int) any {
-		return item
-	})...)
+	l.withGroup().l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+}
+
+func (l *slogLogger) With(fields ...slog.Attr) Logger {
+	return &slogLogger{
+		l: l.l.With(slogAttrSliceToAnySlice(fields...)...),
+	}
+}
+
+func (l *slogLogger) withGroup() *slogLogger {
+	return &slogLogger{
+		l: l.l.WithGroup("fields"),
+	}
 }
 
 func logxLevelToSlogLeveler(l Level) (slog.Leveler, error) {
@@ -96,4 +100,10 @@ func logxLevelToSlogLeveler(l Level) (slog.Leveler, error) {
 	default:
 		return nil, ErrInvalidLevel
 	}
+}
+
+func slogAttrSliceToAnySlice(fields ...slog.Attr) []any {
+	return lo.Map(fields, func(item slog.Attr, _ int) any {
+		return item
+	})
 }

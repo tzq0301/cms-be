@@ -53,13 +53,25 @@ func run() error {
 		logx.Warn(ctx, "test", slog.String("hello", "world"))
 		logx.Error(ctx, "test", slog.String("hello", "world"))
 
-		var wg sync.WaitGroup
+		{
+			var wg sync.WaitGroup
+			wg.Add(20)
 
-		for i := 0; i < 20; i++ {
-			logx.Info(ctx, "concurrent log")
+			for i := 0; i < 20; i++ {
+				logx.Info(ctx, "concurrent log")
+				wg.Done()
+			}
+
+			wg.Wait()
 		}
 
-		wg.Wait()
+		{
+			enhancedLogger := logger.With(slog.String("enhance", "yes"))
+			enhancedCtx := logx.ContextWithLogger(context.Background(), enhancedLogger)
+			logx.Info(enhancedCtx, "enhance message", slog.String("one", "1"))
+		}
+
+		logx.Info(ctx, "no enhance message", slog.String("one", "1"))
 	}
 
 	errLogger := func(err error) {
