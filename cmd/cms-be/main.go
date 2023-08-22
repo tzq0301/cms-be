@@ -84,14 +84,6 @@ func run() error {
 		return errors.Join(err, errors.New("set logger for async"))
 	}
 
-	{
-		// TODO(TZQ) delete
-
-		async.Go(func() {
-			panic("test panic & recover")
-		})
-	}
-
 	err = shutdown.SetErrLogger(errLogger)
 	if err != nil {
 		return errors.Join(err, errors.New("set logger for shutdown"))

@@ -8,7 +8,7 @@ import (
 
 var (
 	errLogger = func(err error) {}
-	mu        sync.Mutex
+	mu        sync.RWMutex
 )
 
 var (
@@ -31,6 +31,9 @@ func SetErrLogger(l func(err error)) error {
 func Go(f func()) {
 	defer func() {
 		if r := recover(); r != nil {
+			mu.RLock()
+			defer mu.RUnlock()
+
 			errLogger(fmt.Errorf("%v", r))
 		}
 	}()
