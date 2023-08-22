@@ -1,9 +1,9 @@
 package config
 
 type MySQL struct {
-	Name     string        `mapstructure:"name"`
-	Database string        `mapstructure:"database"`
-	Master   MySQLInstance `mapstructure:"master"`
+	Database string          `mapstructure:"database"`
+	Master   MySQLInstance   `mapstructure:"master"`
+	Slaves   []MySQLInstance `mapstructure:"slaves"`
 }
 
 type MySQLInstance struct {

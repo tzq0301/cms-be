@@ -1,10 +1,18 @@
 data:
   mysql:
-    - name: "cms-biz"
-      database: "dev"
-      master:
-        host: "127.0.0.1"
-        port: 3306
+    database: "dev"
+    master:
+      host: "127.0.0.1"
+      port: 3306
+      username: "root"
+      password: "123456"
+    slaves:
+      - host: "127.0.0.1"
+        port: 3307
+        username: "root"
+        password: "123456"
+      - host: "127.0.0.1"
+        port: 3308
         username: "root"
         password: "123456"
 

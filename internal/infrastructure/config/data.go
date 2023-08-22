@@ -1,5 +1,5 @@
 package config
 
 type Data struct {
-	MySQL []MySQL `mapstructure:"mysql"`
+	MySQL MySQL `mapstructure:"mysql"`
 }
