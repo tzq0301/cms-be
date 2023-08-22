@@ -2,8 +2,8 @@ package config
 
 type MySQL struct {
 	Name     string        `mapstructure:"name"`
+	Database string        `mapstructure:"database"`
 	Master   MySQLInstance `mapstructure:"master"`
-	Database []Database    `mapstructure:"database"`
 }
 
 type MySQLInstance struct {
@@ -11,8 +11,4 @@ type MySQLInstance struct {
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
-}
-
-type Database struct {
-	Name string
 }
