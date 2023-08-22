@@ -12,7 +12,7 @@ const (
 	defaultGroupName = "fields"
 )
 
-func Init(config Config /* add callbacks */ /* add group name */) (*Logger, error) {
+func Init(config Config, options ...Option) (*Logger, error) {
 	var cores []core
 
 	if config.ConsoleAppenderConfig != nil {
@@ -37,7 +37,9 @@ func Init(config Config /* add callbacks */ /* add group name */) (*Logger, erro
 		service:   config.ServiceConfig,
 	}
 
-	// options
+	for _, option := range options {
+		option(&logger)
+	}
 
 	return &logger, nil
 }
