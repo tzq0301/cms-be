@@ -6,28 +6,19 @@ import (
 )
 
 var (
-	discardL Logger = &discardLogger{}
+	discardC core = &discardCore{}
 )
 
-type discardLogger struct {
+type discardCore struct {
 }
 
-func (_ discardLogger) Error(_ context.Context, _ string, _ ...slog.Attr) {
+func (_ discardCore) log(_ context.Context, _ Level, _ string, _ ...slog.Attr) {
 }
 
-func (_ discardLogger) Warn(_ context.Context, _ string, _ ...slog.Attr) {
+func (c discardCore) withGroup(_ string) core {
+	return c
 }
 
-func (_ discardLogger) Info(_ context.Context, _ string, _ ...slog.Attr) {
-}
-
-func (_ discardLogger) Debug(_ context.Context, _ string, _ ...slog.Attr) {
-}
-
-func (l discardLogger) WithAttrs(_ ...slog.Attr) Logger {
-	return l
-}
-
-func (l discardLogger) withGroup(_ string) Logger {
-	return l
+func (c discardCore) withAttrs(_ ...slog.Attr) core {
+	return c
 }

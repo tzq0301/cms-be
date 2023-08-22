@@ -66,7 +66,7 @@ func run() error {
 		}
 
 		{
-			enhancedLogger := logger.WithAttrs(slog.String("enhance", "yes"))
+			enhancedLogger := logger.With(slog.String("enhance", "yes"))
 			enhancedCtx := logx.ContextWithLogger(context.Background(), enhancedLogger)
 			logx.Info(enhancedCtx, "enhance message", slog.String("one", "1"))
 		}
@@ -100,14 +100,14 @@ func run() error {
 	return nil
 }
 
-func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, error) {
-	logConfig := logx.Config{}
-
-	serviceConfig := logx.ServiceConfig{
-		Name: c.Service.Name,
-		IP: logx.IPConfig{
-			V4: re.IP.V4,
-			V6: re.IP.V6,
+func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (*logx.Logger, error) {
+	logConfig := logx.Config{
+		ServiceConfig: logx.ServiceConfig{
+			Name: c.Service.Name,
+			IP: logx.IPConfig{
+				V4: re.IP.V4,
+				V6: re.IP.V6,
+			},
 		},
 	}
 
@@ -120,8 +120,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, e
 
 		logConfig.ConsoleAppenderConfig = &logx.ConsoleAppenderConfig{
 			CommonAppenderConfig: logx.CommonAppenderConfig{
-				Level:         level,
-				ServiceConfig: serviceConfig,
+				Level: level,
 			},
 		}
 	}
@@ -134,8 +133,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (logx.Logger, e
 
 		logConfig.FileAppenderConfigs = append(logConfig.FileAppenderConfigs, logx.FileAppenderConfig{
 			CommonAppenderConfig: logx.CommonAppenderConfig{
-				Level:         level,
-				ServiceConfig: serviceConfig,
+				Level: level,
 			},
 			FilePath: fileLogConfig.FilePath,
 		})

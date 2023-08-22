@@ -2,107 +2,63 @@ package logx
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"io"
 	"log/slog"
-	"os"
 
 	"github.com/samber/lo"
-
-	"cms-be/internal/pkg/runtimex/shutdown"
 )
 
-type slogLogger struct {
+type logFn func(ctx context.Context, msg string, fields ...any)
+
+var (
+	logLevelMap = map[Level]slog.Level{
+		LevelError: slog.LevelError,
+		LevelWarn:  slog.LevelWarn,
+		LevelInfo:  slog.LevelInfo,
+		LevelDebug: slog.LevelDebug,
+	}
+)
+
+type slogCore struct {
 	l *slog.Logger
 }
 
-func (l *slogLogger) clone() *slogLogger {
-	return &slogLogger{}
-}
-
-func newSlogLogger(handler slog.Handler, service ServiceConfig) *slogLogger {
-	logger := slog.
-		New(handler).
-		With(slog.Any("service", service))
-
-	return &slogLogger{
-		l: logger,
+func newSlogCore(w io.Writer, l Level) core {
+	return &slogCore{
+		l: slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
+			Level: logLevelMap[l],
+		})),
 	}
 }
 
-func newSlogConsoleLogger(config ConsoleAppenderConfig) (*slogLogger, error) {
-	level, err := logxLevelToSlogLeveler(config.Level)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("convert logx.Level to slog.Leveler"))
+func (c *slogCore) log(ctx context.Context, l Level, msg string, fields ...slog.Attr) {
+	c.method(l)(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
+}
+
+func (c *slogCore) withGroup(g string) core {
+	return &slogCore{
+		l: c.l.WithGroup(g),
 	}
-
-	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-	})
-
-	return newSlogLogger(handler, config.ServiceConfig), nil
 }
 
-func newSlogFileLogger(config FileAppenderConfig) (*slogLogger, error) {
-	level, err := logxLevelToSlogLeveler(config.Level)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("convert logx.Level to slog.Leveler"))
+func (c *slogCore) withAttrs(fields ...slog.Attr) core {
+	return &slogCore{
+		l: c.l.With(slogAttrSliceToAnySlice(fields...)...),
 	}
-
-	file, err := os.OpenFile(config.FilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return nil, errors.Join(err, fmt.Errorf("open file: %s", config.FilePath))
-	}
-
-	shutdown.AddHook(file.Close)
-
-	handler := slog.NewJSONHandler(file, &slog.HandlerOptions{
-		Level: level,
-	})
-
-	return newSlogLogger(handler, config.ServiceConfig), nil
 }
 
-func (l *slogLogger) Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.ErrorContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
-}
-
-func (l *slogLogger) Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.WarnContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
-}
-
-func (l *slogLogger) Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.InfoContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
-}
-
-func (l *slogLogger) Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	l.l.DebugContext(ctx, msg, slogAttrSliceToAnySlice(fields...)...)
-}
-
-func (l *slogLogger) WithAttrs(fields ...slog.Attr) Logger {
-	cloned := l.clone()
-	cloned.l = l.l.With(slogAttrSliceToAnySlice(fields...)...)
-	return cloned
-}
-
-func (l *slogLogger) withGroup(g string) Logger {
-	cloned := l.clone()
-	cloned.l = l.l.WithGroup(g)
-	return cloned
-}
-
-func logxLevelToSlogLeveler(l Level) (slog.Leveler, error) {
+func (c *slogCore) method(l Level) logFn {
 	switch l {
 	case LevelError:
-		return slog.LevelError, nil
+		return c.l.ErrorContext
 	case LevelWarn:
-		return slog.LevelWarn, nil
+		return c.l.WarnContext
 	case LevelInfo:
-		return slog.LevelInfo, nil
+		return c.l.InfoContext
 	case LevelDebug:
-		return slog.LevelDebug, nil
+		return c.l.DebugContext
 	default:
-		return nil, ErrInvalidLevel
+		return func(_ context.Context, _ string, _ ...any) {}
 	}
 }
 

@@ -1,6 +1,7 @@
 package logx
 
 type Config struct {
+	ServiceConfig         ServiceConfig
 	ConsoleAppenderConfig *ConsoleAppenderConfig
 	FileAppenderConfigs   []FileAppenderConfig
 }
@@ -16,8 +17,7 @@ type IPConfig struct {
 }
 
 type CommonAppenderConfig struct {
-	ServiceConfig ServiceConfig
-	Level         Level
+	Level Level
 }
 
 type ConsoleAppenderConfig struct {

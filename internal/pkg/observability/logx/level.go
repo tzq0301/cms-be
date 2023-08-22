@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	ErrInvalidLevel = errors.New("invalid logx level")
+	ErrInvalidLevel = errors.New("invalid logx Level")
 )
 
 type Level string

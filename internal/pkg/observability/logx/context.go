@@ -6,18 +6,22 @@ var logxKey = contextKey{}
 
 type contextKey struct{}
 
-func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
+func ContextWithLogger(ctx context.Context, logger *Logger) context.Context {
 	if logger == nil {
-		logger = discardL
+		logger = &Logger{
+			core: discardC,
+		}
 	}
 
 	return context.WithValue(ctx, logxKey, logger)
 }
 
-func LoggerFromContext(ctx context.Context) Logger {
+func LoggerFromContext(ctx context.Context) *Logger {
 	val := ctx.Value(logxKey)
-	if logger, ok := val.(Logger); ok {
+	if logger, ok := val.(*Logger); ok {
 		return logger
 	}
-	return discardL
+	return &Logger{
+		core: discardC,
+	}
 }

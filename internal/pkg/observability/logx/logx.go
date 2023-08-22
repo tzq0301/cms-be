@@ -3,63 +3,57 @@ package logx
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-
-	"cms-be/internal/pkg/runtimex"
+	"os"
 )
 
 const (
 	defaultGroupName = "fields"
-
-	keyStackTrace = "stack"
 )
 
-func Init(config Config) (Logger, error) {
-	var collection []Logger
+func Init(config Config /* add callbacks */ /* add group name */) (*Logger, error) {
+	var cores []core
 
 	if config.ConsoleAppenderConfig != nil {
-		consoleLogger, err := newSlogConsoleLogger(*config.ConsoleAppenderConfig)
-		if err != nil {
-			return nil, errors.Join(err, errors.New("create slogConsoleLogger instance"))
-		}
-
-		collection = append(collection, consoleLogger)
+		consoleCore := newSlogCore(os.Stdout, config.ConsoleAppenderConfig.Level)
+		cores = append(cores, consoleCore)
 	}
 
 	for _, c := range config.FileAppenderConfigs {
-		fileLogger, err := newSlogFileLogger(c)
+		file, err := os.OpenFile(c.FilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, errors.Join(err, errors.New("create slogFileLogger instance"))
+			return nil, errors.Join(err, fmt.Errorf("open file: %s", c.FilePath))
 		}
 
-		collection = append(collection, fileLogger)
+		fileCore := newSlogCore(file, c.Level)
+		cores = append(cores, fileCore)
 	}
 
-	logger := newLoggerCollection(collection...)
+	logger := Logger{
+		core:      newMultiCore(cores...),
+		callbacks: make(callbacks),
+		group:     defaultGroupName,
+		service:   config.ServiceConfig,
+	}
 
-	return logger, nil
+	// options
+
+	return &logger, nil
 }
 
 func Error(ctx context.Context, msg string, fields ...slog.Attr) {
-	log(ctx).Error(ctx, msg, fields...)
+	LoggerFromContext(ctx).log(ctx, LevelError, msg, fields...)
 }
 
 func Warn(ctx context.Context, msg string, fields ...slog.Attr) {
-	log(ctx).Warn(ctx, msg, fields...)
+	LoggerFromContext(ctx).log(ctx, LevelWarn, msg, fields...)
 }
 
 func Info(ctx context.Context, msg string, fields ...slog.Attr) {
-	log(ctx).Info(ctx, msg, fields...)
+	LoggerFromContext(ctx).log(ctx, LevelInfo, msg, fields...)
 }
 
 func Debug(ctx context.Context, msg string, fields ...slog.Attr) {
-	log(ctx).Debug(ctx, msg, fields...)
-}
-
-func log(ctx context.Context) Logger {
-	l := LoggerFromContext(ctx).
-		WithAttrs(slog.String(keyStackTrace, runtimex.StackTraceOfCallerOfCaller())).
-		withGroup(defaultGroupName)
-
-	return l
+	LoggerFromContext(ctx).log(ctx, LevelDebug, msg, fields...)
 }
