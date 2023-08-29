@@ -37,6 +37,7 @@ var (
 
 type Config struct {
 	Service Service `mapstructure:"service"`
+	Adaptor Adaptor `mapstructure:"adaptor"`
 	Data    Data    `mapstructure:"data"`
 	Log     Log     `mapstructure:"log"`
 }

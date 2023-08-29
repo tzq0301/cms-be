@@ -19,12 +19,12 @@ type Logger struct {
 }
 
 func (logger *Logger) With(fields ...slog.Attr) *Logger {
-	cloned := logger.clone()
+	cloned := logger.Clone()
 	cloned.core = cloned.core.withAttrs(fields...)
 	return cloned
 }
 
-func (logger *Logger) clone() *Logger {
+func (logger *Logger) Clone() *Logger {
 	return &Logger{
 		core:      logger.core,
 		callbacks: logger.callbacks.clone(),

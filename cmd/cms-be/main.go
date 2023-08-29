@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
 
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+
+	"cms-be/internal/adaptor"
+	ginadaptor "cms-be/internal/adaptor/gin"
 	"cms-be/internal/infrastructure/config"
 	"cms-be/internal/pkg/async"
 	"cms-be/internal/pkg/observability/logx"
@@ -21,9 +25,11 @@ func main() {
 }
 
 func run() error {
+	ctx := context.Background()
+
 	c, err := config.Load()
 	if err != nil {
-		return errors.Join(err, errors.New("load config"))
+		return errors.Wrap(err, "load config")
 	}
 
 	{
@@ -36,18 +42,19 @@ func run() error {
 
 	runtimeEnvironment, err := runtimex.Load()
 	if err != nil {
-		return errors.Join(err, errors.New("load runtime environment"))
+		return errors.Wrap(err, "load runtime environment")
 	}
 
 	logger, err := initLogger(c, runtimeEnvironment)
 	if err != nil {
-		return errors.Join(err, errors.New("init logger"))
+		return errors.Wrap(err, "init logger")
 	}
 
 	{
 		// TODO(TZQ) delete
 
-		ctx := logx.ContextWithLogger(context.Background(), logger)
+		ctx = logx.ContextWithLogger(ctx, logger)
+
 		logx.Debug(ctx, "test", slog.String("hello", "world"))
 		logx.Info(ctx, "test", slog.String("hello", "world"))
 		logx.Warn(ctx, "test", slog.String("hello", "world"))
@@ -81,12 +88,17 @@ func run() error {
 
 	err = async.SetErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("set logger for async"))
+		return errors.Wrap(err, "set logger for async")
 	}
 
 	err = shutdown.SetErrLogger(errLogger)
 	if err != nil {
-		return errors.Join(err, errors.New("set logger for shutdown"))
+		return errors.Wrap(err, "set logger for shutdown")
+	}
+
+	err = initAdaptor(ctx, c.Adaptor, logger)
+	if err != nil {
+		return errors.Wrap(err, "init adaptor")
 	}
 
 	return nil
@@ -107,7 +119,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (*logx.Logger, 
 		consoleLogConfig := c.Log.Console
 		level, err := logx.LevelFromString(consoleLogConfig.Level)
 		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("convert the level field of console: level=%s", consoleLogConfig.Level))
+			return nil, errors.Wrapf(err, "convert the level field of console: level=%s", consoleLogConfig.Level)
 		}
 
 		logConfig.ConsoleAppenderConfig = &logx.ConsoleAppenderConfig{
@@ -120,7 +132,7 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (*logx.Logger, 
 	for _, fileLogConfig := range c.Log.File {
 		level, err := logx.LevelFromString(fileLogConfig.Level)
 		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("convert the level field of file: level=%s, filepath=%s", fileLogConfig.Level, fileLogConfig.FilePath))
+			return nil, errors.Wrapf(err, "convert the level field of file: level=%s, filepath=%s", fileLogConfig.Level, fileLogConfig.FilePath)
 		}
 
 		logConfig.FileAppenderConfigs = append(logConfig.FileAppenderConfigs, logx.FileAppenderConfig{
@@ -133,8 +145,26 @@ func initLogger(c config.Config, re runtimex.RuntimeEnvironment) (*logx.Logger, 
 
 	logger, err := logx.Init(logConfig)
 	if err != nil {
-		return nil, errors.Join(err, errors.New("init logger"))
+		return nil, errors.Wrap(err, "init logger")
 	}
 
 	return logger, nil
+}
+
+func initAdaptor(ctx context.Context, c config.Adaptor, logger *logx.Logger) error {
+	v1 := ginadaptor.V1()
+
+	ginAdaptor := ginadaptor.New(ctx, c.Gin.Port, c.Gin.UrlPrefix,
+		ginadaptor.WithRouter("v1", v1),
+		ginadaptor.WithMiddlewares(
+			gin.Recovery(),
+			ginadaptor.InjectLogx(logger),
+			ginadaptor.Log()))
+
+	err := adaptor.Run(ctx, ginAdaptor)
+	if err != nil {
+		return errors.Wrap(err, "run adaptors")
+	}
+
+	return nil
 }

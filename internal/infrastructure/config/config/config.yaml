@@ -1,2 +1,7 @@
 service:
   name: cms-be
+
+adaptor:
+  gin:
+    port: 9301
+    urlPrefix: "cms-be"
